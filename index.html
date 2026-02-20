@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔮 Lucky Compass - 開運ナビ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700;900&family=Zen+Old+Mincho:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C9A84C;
+            --gold-light: #F0D080;
+            --deep: #0A0614;
+            --purple: #1A0A2E;
+            --violet: #2D1B5E;
+            --accent: #8B5CF6;
+            --rose: #FF6B9D;
+            --text: #F0E6FF;
+            --muted: #9A8AB0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Serif JP', serif;
+            background: var(--deep);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .starfield { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .star {
+            position: absolute; border-radius: 50%; background: white;
+            animation: twinkle var(--dur,3s) infinite var(--delay,0s);
+        }
+        @keyframes twinkle {
+            0%,100%{opacity:.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.5)}
+        }
+        .shooting-star {
+            position: absolute; width: 120px; height: 1px;
+            background: linear-gradient(90deg, transparent, white, transparent);
+            animation: shoot 6s linear infinite; opacity: 0;
+        }
+        @keyframes shoot {
+            0%{transform:translateX(-200px) translateY(0) rotate(-30deg);opacity:0}
+            10%{opacity:1} 90%{opacity:1}
+            100%{transform:translateX(calc(100vw + 200px)) translateY(200px) rotate(-30deg);opacity:0}
+        }
+        .container { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 40px 0 30px; }
+        .header-symbol { font-size: 3.5rem; display: block; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        h1 {
+            font-family: 'Zen Old Mincho', serif; font-size: 2rem; font-weight: 900;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light), var(--gold));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; letter-spacing: .1em; margin-bottom: 8px;
+        }
+        .subtitle { font-size: .8rem; color: var(--muted); letter-spacing: .15em; }
+        .info-bar { display: flex; gap: 10px; margin: 20px 0; }
+        .info-chip {
+            flex: 1; background: rgba(255,255,255,.04);
+            border: 1px solid rgba(201,168,76,.2); border-radius: 12px; padding: 12px; text-align: center;
+        }
+        .info-chip .label { color: var(--gold); font-size: .65rem; letter-spacing: .1em; margin-bottom: 4px; }
+        .info-chip .value { color: var(--text); font-weight: 700; font-size: .8rem; }
+        .location-btn {
+            width: 100%; padding: 14px;
+            background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.3);
+            border-radius: 12px; color: var(--gold); font-size: .85rem;
+            font-family: 'Noto Serif JP', serif; cursor: pointer; margin-bottom: 12px; transition: all .2s;
+        }
+        .location-btn:hover { background: rgba(201,168,76,.2); }
+        .location-btn.success { border-color: rgba(100,255,150,.4); color: #80FFB0; background: rgba(100,255,150,.05); }
+        .settings-card {
+            background: rgba(255,255,255,.03); border: 1px solid rgba(201,168,76,.15);
+            border-radius: 20px; padding: 25px; margin: 15px 0;
+        }
+        .settings-title { font-size: .75rem; color: var(--gold); letter-spacing: .15em; margin-bottom: 20px; text-align: center; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        label { font-size: .7rem; color: var(--muted); letter-spacing: .1em; }
+        select, input {
+            background: rgba(255,255,255,.06); border: 1px solid rgba(201,168,76,.2);
+            border-radius: 10px; color: var(--text); padding: 10px 12px; font-size: .8rem;
+            font-family: 'Noto Serif JP', serif; width: 100%; appearance: none;
+        }
+        select:focus, input:focus { outline: none; border-color: var(--gold); }
+        option { background: #1A0A2E; }
+        .fortune-btn {
+            width: 100%; padding: 18px;
+            background: linear-gradient(135deg, #7C3AED, #C9A84C, #7C3AED);
+            background-size: 200% 200%; border: none; border-radius: 16px; color: white;
+            font-size: 1rem; font-family: 'Zen Old Mincho', serif; font-weight: 700;
+            letter-spacing: .1em; cursor: pointer; margin: 20px 0;
+            animation: gradientShift 3s ease infinite; position: relative; overflow: hidden;
+        }
+        @keyframes gradientShift {
+            0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%}
+        }
+        .fortune-btn:active { transform: scale(.98); }
+        .loading { display: none; text-align: center; padding: 50px 0; }
+        .loading.show { display: block; }
+        .crystal-ball { font-size: 4rem; animation: pulse 1s ease-in-out infinite; display: block; margin-bottom: 20px; }
+        @keyframes pulse { 0%,100%{transform:scale(1);filter:brightness(1)} 50%{transform:scale(1.1);filter:brightness(1.3)} }
+        .loading-text { color: var(--gold); font-size: .9rem; letter-spacing: .2em; animation: fade 1.5s ease-in-out infinite; }
+        @keyframes fade { 0%,100%{opacity:.5} 50%{opacity:1} }
+        .result { display: none; animation: fadeInUp .8s ease-out; }
+        .result.show { display: block; }
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+        .result-card {
+            border-radius: 20px; padding: 25px; margin: 15px 0;
+            position: relative; overflow: hidden;
+        }
+        .result-card::before {
+            content: ''; position: absolute; inset: 0; border-radius: 20px; padding: 1px;
+            background: linear-gradient(135deg, var(--gold), transparent, var(--accent));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+        }
+        .card-overall { background: linear-gradient(135deg, rgba(201,168,76,.1), rgba(10,6,20,.8)); }
+        .card-time { background: linear-gradient(135deg, rgba(201,168,76,.08), rgba(10,6,20,.8)); }
+        .card-place { background: linear-gradient(135deg, rgba(139,92,246,.1), rgba(10,6,20,.8)); }
+        .card-food { background: linear-gradient(135deg, rgba(255,107,157,.1), rgba(10,6,20,.8)); }
+        .card-divination { background: linear-gradient(135deg, rgba(45,27,94,.5), rgba(10,6,20,.8)); }
+        .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+        .card-icon {
+            font-size: 1.8rem; width: 50px; height: 50px; display: flex;
+            align-items: center; justify-content: center;
+            background: rgba(255,255,255,.05); border-radius: 12px;
+        }
+        .card-title { font-family: 'Zen Old Mincho', serif; font-size: 1rem; color: var(--gold); letter-spacing: .1em; }
+        .card-subtitle { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+        .overall-msg { font-size: .9rem; line-height: 1.8; color: var(--text); }
+        .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .time-item { background: rgba(255,255,255,.04); border-radius: 12px; padding: 12px; text-align: center; }
+        .time-range { font-size: .9rem; font-weight: 700; color: var(--gold); margin-bottom: 4px; }
+        .time-score-val { font-size: 1.3rem; font-weight: 900; margin: 5px 0; }
+        .time-label { font-size: .7rem; color: var(--muted); }
+        .place-item {
+            background: rgba(255,255,255,.04); border-radius: 14px; padding: 15px;
+            margin-bottom: 10px; border-left: 3px solid var(--accent);
+        }
+        .place-rank { font-size: .65rem; color: var(--accent); letter-spacing: .1em; margin-bottom: 5px; }
+        .place-name { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+        .place-nearby { font-size: .8rem; color: var(--gold); margin-bottom: 4px; }
+        .place-reason { font-size: .75rem; color: var(--muted); line-height: 1.6; }
+        .food-item {
+            background: rgba(255,255,255,.04); border-radius: 14px; padding: 15px;
+            margin-bottom: 10px; border-left: 3px solid var(--rose);
+        }
+        .food-rank { font-size: .65rem; color: var(--rose); letter-spacing: .1em; margin-bottom: 5px; }
+        .food-name { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+        .food-shop { font-size: .8rem; color: var(--gold); margin-bottom: 4px; }
+        .food-reason { font-size: .75rem; color: var(--muted); line-height: 1.6; }
+        .div-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+        .div-item:last-child { border-bottom: none; }
+        .div-name { font-size: .7rem; color: var(--gold); letter-spacing: .1em; margin-bottom: 5px; }
+        .div-text { font-size: .8rem; color: var(--text); line-height: 1.7; }
+        .error-msg {
+            background: rgba(255,100,100,.1); border: 1px solid rgba(255,100,100,.3);
+            border-radius: 12px; padding: 15px; text-align: center;
+            color: #FF8080; font-size: .85rem; margin: 15px 0; display: none;
+        }
+        .error-msg.show { display: block; }
+        footer { text-align: center; padding: 30px 0; color: var(--muted); font-size: .7rem; letter-spacing: .1em; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--deep); }
+        ::-webkit-scrollbar-thumb { background: var(--violet); border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="starfield" id="starfield"></div>
+<div class="container">
+    <header>
+        <span class="header-symbol">🔮</span>
+        <h1>Lucky Compass</h1>
+        <p class="subtitle">開運ナビ ─ 全占術統合システム</p>
+    </header>
+
+    <div class="info-bar">
+        <div class="info-chip">
+            <div class="label">📅 日時</div>
+            <div class="value" id="datetime-display">取得中...</div>
+        </div>
+        <div class="info-chip">
+            <div class="label">📍 位置</div>
+            <div class="value" id="location-display">未取得</div>
+        </div>
+    </div>
+
+    <button class="location-btn" id="location-btn" onclick="getLocation()">
+        📍 位置情報を取得する
+    </button>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <div class="settings-card">
+        <div class="settings-title">✦ あなたの情報を入力 ✦</div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>星座</label>
+                <select id="zodiac">
+                    <option value="牡羊座">牡羊座 ♈</option>
+                    <option value="牡牛座">牡牛座 ♉</option>
+                    <option value="双子座">双子座 ♊</option>
+                    <option value="蟹座">蟹座 ♋</option>
+                    <option value="獅子座">獅子座 ♌</option>
+                    <option value="乙女座">乙女座 ♍</option>
+                    <option value="天秤座">天秤座 ♎</option>
+                    <option value="蠍座">蠍座 ♏</option>
+                    <option value="射手座">射手座 ♐</option>
+                    <option value="山羊座">山羊座 ♑</option>
+                    <option value="水瓶座">水瓶座 ♒</option>
+                    <option value="魚座">魚座 ♓</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>血液型</label>
+                <select id="blood-type">
+                    <option value="A">A型</option>
+                    <option value="B" selected>B型</option>
+                    <option value="O">O型</option>
+                    <option value="AB">AB型</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>干支</label>
+                <select id="eto">
+                    <option value="子">子（ねずみ）</option>
+                    <option value="丑">丑（うし）</option>
+                    <option value="寅">寅（とら）</option>
+                    <option value="卯">卯（うさぎ）</option>
+                    <option value="辰">辰（たつ）</option>
+                    <option value="巳">巳（へび）</option>
+                    <option value="午">午（うま）</option>
+                    <option value="未">未（ひつじ）</option>
+                    <option value="申">申（さる）</option>
+                    <option value="酉" selected>酉（とり）</option>
+                    <option value="戌">戌（いぬ）</option>
+                    <option value="亥">亥（いのしし）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>生年月日</label>
+                <input type="date" id="birthdate" value="1993-04-14">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group full">
+                <label>現在の場所・状況（任意）</label>
+                <input type="text" id="situation" placeholder="例：宮崎市イオンモール、自宅、外出中">
+            </div>
+        </div>
+    </div>
+
+    <button class="fortune-btn" onclick="startFortune()">
+        ✨ 今この場所の運勢を占う ✨
+    </button>
+
+    <div class="loading" id="loading">
+        <span class="crystal-ball">🔮</span>
+        <div class="loading-text">星々に問いかけています...</div>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <footer>
+        Powered by クトちゃん 💫 全占術統合システム<br>
+        西洋占星術・四柱推命・九星気学・風水・タロット・数秘術統合
+    </footer>
+</div>
+
+<script>
+// ========== 星空生成 ==========
+const sf = document.getElementById('starfield');
+for (let i = 0; i < 120; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2 + .5;
+    s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s;`;
+    sf.appendChild(s);
+}
+for (let i = 0; i < 3; i++) {
+    const ss = document.createElement('div');
+    ss.className = 'shooting-star';
+    ss.style.cssText = `top:${Math.random()*40}%;left:0;animation-delay:${i*4+Math.random()*4}s;animation-duration:${5+Math.random()*3}s;`;
+    sf.appendChild(ss);
+}
+
+// ========== 日時更新 ==========
+function updateDatetime() {
+    const now = new Date();
+    const m = now.getMonth()+1, d = now.getDate();
+    const h = String(now.getHours()).padStart(2,'0');
+    const min = String(now.getMinutes()).padStart(2,'0');
+    const days = ['日','月','火','水','木','金','土'];
+    document.getElementById('datetime-display').textContent = `${m}/${d}(${days[now.getDay()]}) ${h}:${min}`;
+}
+updateDatetime();
+setInterval(updateDatetime, 1000);
+
+// ========== 位置情報 ==========
+let currentCoords = null;
+let currentLocation = '';
+
+function getLocation() {
+    const btn = document.getElementById('location-btn');
+    btn.textContent = '📍 取得中...';
+    btn.disabled = true;
+
+    if (!navigator.geolocation) {
+        showError('位置情報に対応していません。');
+        btn.textContent = '📍 位置情報を取得する';
+        btn.disabled = false;
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        async pos => {
+            currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${currentCoords.lat}&lon=${currentCoords.lon}&format=json&accept-language=ja`);
+                const data = await res.json();
+                const a = data.address;
+                currentLocation = (a.city||a.town||a.village||a.county||'') + (a.suburb||a.neighbourhood||'');
+                if (!currentLocation) currentLocation = `緯度${currentCoords.lat.toFixed(2)}`;
+            } catch {
+                currentLocation = `緯度${currentCoords.lat.toFixed(2)} 経度${currentCoords.lon.toFixed(2)}`;
+            }
+            document.getElementById('location-display').textContent = currentLocation;
+            document.getElementById('situation').value = currentLocation;
+            btn.textContent = `✅ ${currentLocation}`;
+            btn.className = 'location-btn success';
+            btn.disabled = false;
+        },
+        err => {
+            showError('位置情報の取得に失敗しました。');
+            btn.textContent = '📍 位置情報を取得する';
+            btn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+}
+
+function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+// ========== 全占術計算エンジン ==========
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// FIX 1: 九星気学（本命星）- 正しい計算式
+// 生年の各桁の和が1桁になるまで加算し、11から引く
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getKyusei(birthYear) {
+    let sum = String(birthYear).split('').map(Number).reduce((a, b) => a + b, 0);
+    while (sum >= 10) {
+        sum = String(sum).split('').map(Number).reduce((a, b) => a + b, 0);
+    }
+    let num = 11 - sum;
+    if (num <= 0) num += 9;
+    if (num > 9) num -= 9;
+    const stars = ['', '一白水星', '二黒土星', '三碧木星', '四緑木星', '五黄土星', '六白金星', '七赤金星', '八白土星', '九紫火星'];
+    return stars[num];
+    // 例: 1993年 → 1+9+9+3=22 → 2+2=4 → 11-4=7 → 七赤金星
+}
+
+// 数秘術：ライフパス
+function getLifePath(birthdate) {
+    const digits = birthdate.replace(/-/g,'').split('').map(Number);
+    let sum = digits.reduce((a,b)=>a+b,0);
+    while (sum > 9 && sum !== 11 && sum !== 22) {
+        sum = String(sum).split('').map(Number).reduce((a,b)=>a+b,0);
+    }
+    return sum;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// FIX 2: 四柱推命（日干）- 基準日修正
+// 2026/2/20 = 乙（index 1）を基準に計算
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getDayKan(now) {
+    const base = new Date(2026, 1, 20); // 2026/2/20 = 乙
+    const baseIndex = 1; // 乙
+    const diff = Math.floor((now - base) / 86400000);
+    const kans = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+    return kans[((diff + baseIndex) % 10 + 10) % 10];
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// FIX 3: 六曜 - 旧暦（月+日）%6 による正しい計算
+// 基準: 2026/2/17 = 旧暦丙午年 正月1日（春節）
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getLunarDate(date) {
+    // 2026/2/17 = 旧暦正月1日（丙午年 春節）を基準とする
+    const REF = new Date(2026, 1, 17);
+    // 旧暦各月の日数概算（大月30日・小月29日交互）
+    const MONTH_DAYS = [30, 29, 30, 30, 29, 30, 29, 30, 29, 30, 30, 29];
+    const diff = Math.floor((date - REF) / 86400000); // Math.roundだと夕方以降に1日ずれるためfloorを使用
+    let m = 1, d = 1 + diff;
+    if (d >= 1) {
+        while (true) {
+            const len = MONTH_DAYS[(m - 1) % 12];
+            if (d <= len) break;
+            d -= len; m++;
+        }
+    } else {
+        while (d <= 0) {
+            m--;
+            if (m <= 0) m += 12;
+            d += MONTH_DAYS[(m - 1) % 12];
+        }
+    }
+    return [m, d];
+    // 例: 2/20 → diff=3 → 旧暦正月4日 → (1+4)%6=5 → 仏滅
+}
+
+function getRokuyo(now) {
+    const [lm, ld] = getLunarDate(now);
+    const idx = (lm + ld) % 6;
+    return ['大安','赤口','先勝','友引','先負','仏滅'][idx];
+}
+
+// 星座別基本運気
+const zodiacBase = {
+    '牡羊座':{base:88,element:'火',planet:'火星',luckyColor:'赤',luckyNum:9},
+    '牡牛座':{base:82,element:'土',planet:'金星',luckyColor:'緑',luckyNum:6},
+    '双子座':{base:86,element:'風',planet:'水星',luckyColor:'黄',luckyNum:5},
+    '蟹座'  :{base:80,element:'水',planet:'月',luckyColor:'白',luckyNum:2},
+    '獅子座':{base:90,element:'火',planet:'太陽',luckyColor:'金',luckyNum:1},
+    '乙女座':{base:84,element:'土',planet:'水星',luckyColor:'茶',luckyNum:5},
+    '天秤座':{base:85,element:'風',planet:'金星',luckyColor:'ピンク',luckyNum:6},
+    '蠍座'  :{base:87,element:'水',planet:'冥王星',luckyColor:'黒',luckyNum:8},
+    '射手座':{base:89,element:'火',planet:'木星',luckyColor:'紫',luckyNum:3},
+    '山羊座':{base:83,element:'土',planet:'土星',luckyColor:'黒',luckyNum:8},
+    '水瓶座':{base:86,element:'風',planet:'天王星',luckyColor:'青',luckyNum:4},
+    '魚座'  :{base:81,element:'水',planet:'海王星',luckyColor:'水色',luckyNum:7}
+};
+
+// 血液型補正
+const bloodBonus = { 'A':3, 'B':5, 'O':4, 'AB':6 };
+
+// 干支補正
+const etoBonus = {
+    '子':4,'丑':3,'寅':6,'卯':5,'辰':7,'巳':4,'午':6,'未':3,'申':5,'酉':6,'戌':4,'亥':5
+};
+
+// 曜日別運気
+const dayBonus = [3,5,4,7,6,8,7];
+
+// 時間帯別運気
+function getHourScore(h) {
+    const scores = [3,2,2,2,2,4,6,7,7,7,8,8,9,9,8,8,7,9,9,9,8,8,7,5];
+    return scores[h] || 7;
+}
+
+// ========== イオンモール宮崎 飲食店データベース ==========
+const aeonMiyazakiRestaurants = {
+    restaurant1F: [
+        { name:'北海道キッチン YOSHIMI',    genre:'レストラン',    element:'土', color:'茶', time:'昼〜夕食', desc:'北海道の食材を使ったレストラン。ローストビーフ丼が人気' },
+        { name:'コメダ珈琲店',              genre:'カフェ',        element:'風', color:'茶', time:'朝〜夜', desc:'名古屋の老舗カフェ。モーニングも充実' },
+        { name:'築地食堂 源ちゃん',         genre:'海鮮・和食',    element:'水', color:'白', time:'昼〜夕食', desc:'熟練の板前が調理する和食・海鮮。鯛ごま丼が人気' },
+        { name:'てんぷら一代',              genre:'天ぷら',        element:'火', color:'黄', time:'昼〜夕食', desc:'宮崎県初出店。リーズナブルな揚げたて天ぷら' },
+        { name:'スターバックス コーヒー（1F）', genre:'カフェ',    element:'風', color:'緑', time:'朝〜夜', desc:'1Fのスタバ。ゆっくりできる空間' },
+        { name:'イタリアントマト',          genre:'カフェ・洋食',  element:'風', color:'赤', time:'昼〜夕食', desc:'パスタやランチセットが人気' },
+        { name:'ケンタッキーフライドチキン', genre:'ファストフード', element:'火', color:'赤', time:'昼〜夜', desc:'定番のKFC。和風チキンカツサンドが人気' },
+        { name:'マクドナルド',              genre:'ファストフード', element:'火', color:'黄', time:'朝〜深夜', desc:'定番のマック。24時間営業' },
+        { name:'銀座惣菜店',               genre:'惣菜・焼き鳥',  element:'火', color:'茶', time:'昼〜夜', desc:'焼き鳥・惣菜。テイクアウト人気' },
+        { name:'柿安ダイニング',            genre:'惣菜',          element:'土', color:'茶', time:'昼〜夜', desc:'上質な惣菜。お弁当も人気' },
+    ],
+    foodCourt2F: [
+        { name:'丸亀製麺',                  genre:'うどん',        element:'水', color:'白', time:'昼食', desc:'讃岐釜揚げうどん。かけうどん・天ぷらが定番' },
+        { name:'ディッパーダン',            genre:'クレープ・スイーツ', element:'水', color:'ピンク', time:'おやつ', desc:'1972年創業のクレープ専門店。いちごミルク系が人気' },
+        { name:'魁力屋',                    genre:'ラーメン',      element:'火', color:'茶', time:'昼〜夜', desc:'京都背脂醤油ラーメン。あっさりコク深い味' },
+        { name:'もくてきち',               genre:'ラーメン',      element:'火', color:'赤', time:'昼〜夜', desc:'豚骨ラーメン専門店。宮崎県初出店' },
+        { name:'サブウェイ',               genre:'サンドイッチ',  element:'風', color:'緑', time:'朝〜夜', desc:'野菜たっぷりサブウェイ。ヘルシー志向に人気' },
+        { name:'スターバックス コーヒー（2F）', genre:'カフェ',   element:'風', color:'緑', time:'朝〜夜', desc:'2Fのスタバ。フラペチーノが人気' },
+        { name:'タリーズコーヒー',          genre:'カフェ',        element:'風', color:'赤', time:'朝〜夜', desc:'こだわりのコーヒー。落ち着いた雰囲気' },
+        { name:'スターバックス ティー＆カフェ', genre:'カフェ・紅茶', element:'風', color:'緑', time:'朝〜夜', desc:'ティーに特化したスタバ。スムージーも人気' },
+        { name:'くだものかふぇ',            genre:'カフェ・フルーツ', element:'水', color:'ピンク', time:'昼〜夜', desc:'フルーツスムージーが人気。あまおう系が絶品' },
+        { name:'ゴディバ',                  genre:'スイーツ',      element:'水', color:'茶', time:'昼〜夜', desc:'高級チョコレート。ドバイチョコも登場' },
+        { name:'銀だこ',                    genre:'たこ焼き',      element:'火', color:'茶', time:'昼〜夜', desc:'外カリカリのたこ焼き。ゆずポンおろしが人気' },
+    ],
+    takeout: [
+        { name:'柿安 牛肉どまん中',         genre:'弁当・惣菜',    element:'土', color:'茶', time:'昼〜夜', desc:'牛肉を使った弁当・惣菜' },
+        { name:'モスバーガー',              genre:'ファストフード', element:'火', color:'赤', time:'昼〜夜', desc:'こだわり野菜のハンバーガー' },
+    ]
+};
+
+const allAeonRestaurants = [
+    ...aeonMiyazakiRestaurants.restaurant1F,
+    ...aeonMiyazakiRestaurants.foodCourt2F,
+    ...aeonMiyazakiRestaurants.takeout
+];
+
+// ========== 全国地域データベース ==========
+const regionalDB = {
+    '宮崎': {
+        spiritual: ['宮崎神宮','青島神社','鵜戸神宮','江田神社'],
+        nature:    ['青島','大淀川河川敷','県総合運動公園','堀切峠'],
+        shopping:  ['イオンモール宮崎','宮崎山形屋','ボンベルタ橘','フローランテ宮崎'],
+        cafe:      ['コメダ珈琲（イオンモール）','スターバックス（イオンモール）','タリーズ（イオンモール）'],
+        foods: {
+            '火': [{name:'チキン南蛮',shop:'おぐら本店・地元食堂',color:'茶'},{name:'日向鶏の炭火焼き',shop:'炭火焼き専門店',color:'茶'},{name:'揚げたて天ぷら',shop:'てんぷら一代（イオンモール1F）',color:'黄'}],
+            '土': [{name:'冷や汁定食',shop:'宮崎郷土料理店',color:'白'},{name:'海鮮・和食定食',shop:'築地食堂 源ちゃん（イオンモール1F）',color:'白'},{name:'讃岐うどん',shop:'丸亀製麺（イオンモール2F）',color:'白'}],
+            '風': [{name:'マンゴーパフェ',shop:'宮崎マンゴー専門カフェ',color:'黄'},{name:'カフェラテ',shop:'スターバックス（イオンモール）',color:'緑'},{name:'サンドイッチ',shop:'サブウェイ（イオンモール2F）',color:'緑'}],
+            '水': [{name:'いちごクレープ',shop:'ディッパーダン（イオンモール2F）',color:'ピンク'},{name:'フルーツスムージー',shop:'くだものかふぇ（イオンモール2F）',color:'ピンク'},{name:'宮崎地鶏のたたき',shop:'地元居酒屋・郷土料理店',color:'茶'}],
+        }
+    },
+    '名古屋': {
+        spiritual: ['熱田神宮','名古屋東照宮','若宮八幡社','猿投神社'],
+        nature:    ['東山植物園','鶴舞公園','庄内緑地','名城公園'],
+        shopping:  ['ラシック','矢場町・パルコ','イオンモール Nagoya Noritake Garden','JRゲートタワー'],
+        cafe:      ['コメダ珈琲（本拠地！）','スターバックス名古屋','タリーズ名古屋'],
+        foods: {
+            '火': [{name:'手羽先唐揚げ',shop:'風来坊・世界の山ちゃん',color:'茶'},{name:'みそかつ',shop:'矢場とん・地元みそかつ店',color:'茶'},{name:'どて煮',shop:'居酒屋・おでん屋',color:'茶'}],
+            '土': [{name:'ひつまぶし',shop:'蓬莱軒・あつた',color:'茶'},{name:'きしめん',shop:'住よし・地元きしめん',color:'白'},{name:'天むす',shop:'千寿・地元弁当店',color:'白'}],
+            '風': [{name:'名古屋モーニング',shop:'コメダ珈琲（本店圏内）',color:'黄'},{name:'ういろう',shop:'青柳総本家・大須万松寺',color:'白'},{name:'カフェラテ',shop:'コメダ珈琲',color:'茶'}],
+            '水': [{name:'あんかけスパ',shop:'パスタデ・ノノ・地元系',color:'茶'},{name:'エビフライ',shop:'老舗洋食店',color:'黄'},{name:'小倉トースト',shop:'喫茶店全般',color:'茶'}],
+        }
+    },
+    '新潟': {
+        spiritual: ['白山神社','彌彦神社','春日山神社','村上天満宮'],
+        nature:    ['妙高高原','越後湯沢温泉','佐渡島（近郊）','清津峡'],
+        shopping:  ['CoCoLo新潟','新潟伊勢丹','万代シティ','イオンモール新潟南'],
+        cafe:      ['スターバックス新潟','コメダ珈琲新潟','タリーズ新潟'],
+        foods: {
+            '火': [{name:'新潟B級グルメ・タレカツ丼',shop:'とんかつ太郎・地元店',color:'茶'},{name:'へぎそば',shop:'小嶋屋総本店',color:'茶'},{name:'新潟ラーメン（濃厚味噌）',shop:'地元ラーメン店',color:'茶'}],
+            '土': [{name:'コシヒカリ定食',shop:'地元定食屋・農家直売',color:'白'},{name:'のっぺ汁',shop:'郷土料理店',color:'白'},{name:'笹団子',shop:'地元和菓子店',color:'緑'}],
+            '風': [{name:'アイスクリーム',shop:'イタリアン（太陽フード）',color:'白'},{name:'カフェラテ',shop:'スターバックス新潟',color:'緑'},{name:'ぽっぽ焼き',shop:'万代の屋台・祭り',color:'茶'}],
+            '水': [{name:'日本海の海鮮',shop:'本町市場・海鮮居酒屋',color:'白'},{name:'南蛮エビ',shop:'海鮮市場',color:'赤'},{name:'岩船のサーモン',shop:'海鮮店',color:'橙'}],
+        }
+    },
+    '平塚': {
+        spiritual: ['平塚八幡宮','神明社','前鳥神社','高麗山'],
+        nature:    ['湘南海岸','大磯','弘法山公園','吾妻山公園'],
+        shopping:  ['ららぽーと湘南平塚','イオンモール平塚','平塚駅周辺商店街','ビナウォーク'],
+        cafe:      ['スターバックス平塚','コメダ珈琲平塚','サンマルク平塚'],
+        foods: {
+            '火': [{name:'湘南しらす丼',shop:'江の島・地元海鮮店',color:'白'},{name:'ローストビーフ丼',shop:'平塚駅周辺洋食店',color:'赤'},{name:'とんかつ',shop:'地元とんかつ店',color:'茶'}],
+            '土': [{name:'湘南なぎさのたこ焼き',shop:'江の島・海岸沿い',color:'茶'},{name:'サーフィン後の定食',shop:'海岸沿い定食屋',color:'白'},{name:'横須賀海軍カレー',shop:'カレー専門店',color:'黄'}],
+            '風': [{name:'サンドイッチ',shop:'サブウェイ・ベーカリー',color:'緑'},{name:'カフェラテ',shop:'スターバックス平塚',color:'緑'},{name:'湘南スイーツ',shop:'海岸カフェ',color:'ピンク'}],
+            '水': [{name:'生しらす丼',shop:'江の島・平塚漁港直売',color:'白'},{name:'アジフライ定食',shop:'地元定食屋',color:'黄'},{name:'海鮮BBQ',shop:'海岸バーベキュー場',color:'白'}],
+        }
+    },
+    '沼津': {
+        spiritual: ['沼津日枝神社','富士山本宮浅間大社（近郊）','三嶋大社','高尾山穂見神社'],
+        nature:    ['沼津港','伊豆半島','千本浜公園','達磨山'],
+        shopping:  ['ららぽーと沼津','イオン沼津','プラザヴェルデ','マリンパーク'],
+        cafe:      ['スターバックス沼津','コメダ珈琲沼津','地元喫茶'],
+        foods: {
+            '火': [{name:'沼津港の深海魚料理',shop:'沼津深海水族館周辺・港町',color:'青'},{name:'地アジのたたき',shop:'沼津漁港食堂',color:'茶'},{name:'伊豆の山葵料理',shop:'静岡わさび専門',color:'緑'}],
+            '土': [{name:'桜海老のかき揚げ',shop:'富士川沿い・地元定食',color:'ピンク'},{name:'静岡おでん',shop:'地元おでん屋',color:'茶'},{name:'うなぎ',shop:'浜松・地元うなぎ店',color:'茶'}],
+            '風': [{name:'みかんスイーツ',shop:'静岡みかん専門店',color:'橙'},{name:'カフェラテ',shop:'スターバックス沼津',color:'緑'},{name:'富士山ソフト',shop:'富士山土産店',color:'白'}],
+            '水': [{name:'ひもの定食',shop:'沼津ひもの専門店',color:'茶'},{name:'金目鯛煮付け',shop:'伊豆・地元料理店',color:'赤'},{name:'駿河湾海鮮丼',shop:'沼津港飲食街',color:'白'}],
+        }
+    },
+    '岐阜': {
+        spiritual: ['伊奈波神社','南宮大社','金神社','椿大神社'],
+        nature:    ['白川郷','飛騨高山','郡上八幡','養老の滝'],
+        shopping:  ['マーサ21','岐阜髙島屋','モレラ岐阜','イオンモール各務原'],
+        cafe:      ['スターバックス岐阜','コメダ珈琲岐阜','カフェ・ド・クリエ'],
+        foods: {
+            '火': [{name:'飛騨牛焼肉',shop:'高山・飛騨牛専門店',color:'赤'},{name:'鶏チャンポン',shop:'地元中華',color:'白'},{name:'味噌かつ',shop:'地元とんかつ店',color:'茶'}],
+            '土': [{name:'飛騨の漬物ステーキ',shop:'高山郷土料理',color:'茶'},{name:'五平餅',shop:'道の駅・郷土菓子店',color:'茶'},{name:'岐阜タンメン',shop:'地元ラーメン店',color:'白'}],
+            '風': [{name:'みたらし団子（発祥地）',shop:'下呂・地元和菓子店',color:'茶'},{name:'カフェラテ',shop:'スターバックス岐阜',color:'緑'},{name:'鮎スイーツ',shop:'郡上土産店',color:'黄'}],
+            '水': [{name:'鮎料理',shop:'長良川沿い料理店',color:'緑'},{name:'飛騨の海鮮',shop:'市場・居酒屋',color:'白'},{name:'朴葉みそ定食',shop:'高山郷土料理',color:'茶'}],
+        }
+    },
+    'default': {
+        spiritual: ['近くの神社','地域の氏神様','パワースポット'],
+        nature:    ['近くの公園','川沿いの遊歩道','自然豊かな場所'],
+        shopping:  ['地元のショッピングモール','商店街','地元のマーケット'],
+        cafe:      ['スターバックス','コメダ珈琲','タリーズコーヒー'],
+        foods: {
+            '火': [{name:'ラーメン・麺類',shop:'地元ラーメン専門店',color:'茶'},{name:'揚げ物・天ぷら',shop:'地元定食屋',color:'黄'},{name:'焼き鳥',shop:'地元焼き鳥店',color:'茶'}],
+            '土': [{name:'定食・和食',shop:'地元定食屋',color:'白'},{name:'うどん・そば',shop:'丸亀製麺・地元うどん',color:'白'},{name:'ご飯もの',shop:'地元飲食店',color:'白'}],
+            '風': [{name:'カフェラテ・スイーツ',shop:'スターバックス・カフェ',color:'緑'},{name:'サンドイッチ',shop:'サブウェイ・ベーカリー',color:'緑'},{name:'パン・軽食',shop:'地元ベーカリー',color:'黄'}],
+            '水': [{name:'海鮮・寿司',shop:'地元海鮮店・回転寿司',color:'白'},{name:'フルーツスイーツ',shop:'カフェ・フルーツパーラー',color:'ピンク'},{name:'冷やし麺',shop:'地元飲食店',color:'白'}],
+        }
+    }
+};
+
+function detectRegion(situation) {
+    const keys = Object.keys(regionalDB).filter(k => k !== 'default');
+    for (const key of keys) {
+        if (situation.includes(key)) return key;
+    }
+    const aliases = {
+        'みやざき':'宮崎','なごや':'名古屋','にいがた':'新潟',
+        'ひらつか':'平塚','ぬまづ':'沼津','ぎふ':'岐阜',
+        'イオン':'宮崎','宮崎市':'宮崎','名古屋市':'名古屋',
+        '新潟市':'新潟','平塚市':'平塚','沼津市':'沼津','高山市':'岐阜'
+    };
+    for (const [alias, region] of Object.entries(aliases)) {
+        if (situation.includes(alias)) return region;
+    }
+    return 'default';
+}
+
+// ========== メイン占い計算 ==========
+function calculateFortune(zodiac, blood, eto, birthdate, situation, now) {
+    const zData = zodiacBase[zodiac] || zodiacBase['牡羊座'];
+    let base = zData.base;
+    base += (bloodBonus[blood] || 4);
+    base += (etoBonus[eto] || 4);
+    base += dayBonus[now.getDay()];
+    const lp = getLifePath(birthdate);
+    base += (lp % 5);
+    const moonPhase = getMoonPhase(now);
+    base += moonPhase.bonus;
+    const birthYear = birthdate ? parseInt(birthdate.split('-')[0]) : 1993;
+    const kyusei = getKyusei(birthYear);
+    const rokuyo = getRokuyo(now);
+    const rokuyoBonus = {'大安':8,'友引':5,'先勝':4,'先負':3,'赤口':2,'仏滅':1};
+    base += (rokuyoBonus[rokuyo] || 4);
+    base = Math.min(99, Math.max(65, base));
+    const dayKan = getDayKan(now);
+    const luckyTimes = calcLuckyTimes(now, zodiac, blood, eto);
+    const places = calcLuckyPlaces(zData.element, situation, now, base);
+    const foods = calcLuckyFoods(zData.element, zodiac, now, situation);
+    const divinations = generateDivinationMessages(zodiac, blood, eto, rokuyo, kyusei, lp, dayKan, moonPhase, base, now);
+    const overall = generateOverallMessage(zodiac, rokuyo, base, now, situation);
+    return { base, luckyTimes, places, foods, divinations, overall, rokuyo, kyusei, lp, moonPhase };
+}
+
+function getMoonPhase(now) {
+    const knownNew = new Date(2000, 0, 6);
+    const diff = (now - knownNew) / 86400000;
+    const cycle = diff % 29.53;
+    if (cycle < 1.5 || cycle > 28) return { phase:'新月', emoji:'🌑', bonus:6 };
+    if (cycle < 7.5) return { phase:'三日月', emoji:'🌒', bonus:4 };
+    if (cycle < 9.5) return { phase:'上弦の月', emoji:'🌓', bonus:5 };
+    if (cycle < 14) return { phase:'十三夜', emoji:'🌔', bonus:6 };
+    if (cycle < 16) return { phase:'満月', emoji:'🌕', bonus:8 };
+    if (cycle < 22) return { phase:'下弦の月', emoji:'🌗', bonus:4 };
+    return { phase:'晦日月', emoji:'🌘', bonus:3 };
+}
+
+function calcLuckyTimes(now, zodiac, blood, eto) {
+    const h = now.getHours();
+    const timeSlots = [
+        { time:'6:00-9:00',  start:6  },
+        { time:'9:00-12:00', start:9  },
+        { time:'12:00-15:00',start:12 },
+        { time:'15:00-18:00',start:15 },
+        { time:'18:00-21:00',start:18 },
+        { time:'21:00-24:00',start:21 },
+    ];
+    return timeSlots.map(slot => {
+        let score = 70 + getHourScore(slot.start);
+        const zData = zodiacBase[zodiac];
+        if (zData) {
+            const ln = zData.luckyNum;
+            if (slot.start % 3 === ln % 3) score += 5;
+        }
+        if (Math.abs(slot.start - h) <= 2) score += 3;
+        score = Math.min(99, score);
+        const label = score >= 90 ? '🔥最強のピーク！' : score >= 85 ? '⭐好調！' : score >= 80 ? '↑上昇中' : '→安定';
+        return { time: slot.time, score, label };
+    }).sort((a,b) => b.score - a.score).slice(0, 4);
+}
+
+function calcLuckyPlaces(element, situation, now, score) {
+    const region = detectRegion(situation);
+    const rdb = regionalDB[region] || regionalDB['default'];
+    const elementToCategory = {
+        '火': ['spiritual','nature','shopping','cafe'],
+        '土': ['shopping','cafe','nature','spiritual'],
+        '風': ['cafe','shopping','spiritual','nature'],
+        '水': ['nature','spiritual','cafe','shopping'],
+    };
+    const cats = elementToCategory[element] || ['spiritual','nature','shopping','cafe'];
+    const directions = { spiritual:'北', nature:'東', shopping:'南', cafe:'南東' };
+    const reasons = {
+        spiritual: '神聖なエネルギーが高まり、願いが叶いやすい聖地です。',
+        nature:    '自然のパワーが運気を浄化し、新たなエネルギーを与えてくれます。',
+        shopping:  '金運と人との縁が結ばれやすい、賑わいのある場所です。',
+        cafe:      'ゆっくりと流れる時間の中で、良縁と出会いを引き寄せます。',
+    };
+    return cats.slice(0,3).map((cat, i) => {
+        const spots = rdb[cat] || regionalDB['default'][cat];
+        const spot = spots[now.getDate() % spots.length];
+        return {
+            rank: i+1,
+            name: cat === 'spiritual' ? '神社・パワースポット' : cat === 'nature' ? '自然スポット' : cat === 'shopping' ? 'ショッピングエリア' : 'カフェ・喫茶店',
+            category: cat === 'spiritual' ? '⛩️ 神社・聖地' : cat === 'nature' ? '🌿 自然・公園' : cat === 'shopping' ? '🛍️ ショッピング' : '☕ カフェ',
+            nearby: spot,
+            reason: reasons[cat],
+            direction: directions[cat],
+        };
+    });
+}
+
+function calcLuckyFoods(element, zodiac, now, situation) {
+    const region = detectRegion(situation);
+    const rdb = regionalDB[region] || regionalDB['default'];
+    const foods = (rdb.foods && rdb.foods[element]) || regionalDB['default'].foods[element] || regionalDB['default'].foods['水'];
+    const seed = now.getDate() + now.getHours();
+    const sorted = foods.map((f, i) => ({ ...f, score: 70 + ((seed + i * 7) % 25), time: f.time || '昼〜夜' }))
+        .sort((a, b) => b.score - a.score);
+    const region_name = region !== 'default' ? region : '';
+    return sorted.slice(0, 3).map((f, i) => ({
+        rank: i+1,
+        name: f.name,
+        color: f.color,
+        shop: f.shop,
+        reason: `${element}の気を持つあなたに最適。${region_name ? region_name + 'の' : ''}今日の運気と相性が抜群です。`,
+        best_time: f.time || '昼〜夜'
+    }));
+}
+
+function generateAllShopsHTML() {
+    const cats = [
+        { key: 'restaurant1F', label: '🍽️ 1Fレストラン街', color: '#C9A84C' },
+        { key: 'foodCourt2F',  label: '🛒 2Fフードコート（Food Forest）', color: '#8B5CF6' },
+        { key: 'takeout',      label: '🥡 テイクアウト・その他', color: '#FF6B9D' },
+    ];
+    return cats.map(cat => `
+        <div style="margin-bottom:15px;">
+            <div style="font-size:.75rem;color:${cat.color};letter-spacing:.1em;margin-bottom:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08);">
+                ${cat.label}
+            </div>
+            ${aeonMiyazakiRestaurants[cat.key].map(r => `
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                <div style="font-size:1rem;">${{
+                    'レストラン':'🍴','カフェ':'☕','海鮮・和食':'🐟','天ぷら':'🍤',
+                    'ファストフード':'🍔','惣菜・焼き鳥':'🍗','惣菜':'🥘','うどん':'🍜',
+                    'クレープ・スイーツ':'🍓','ラーメン':'🍜','サンドイッチ':'🥖',
+                    'カフェ・紅茶':'🫖','カフェ・フルーツ':'🍓','スイーツ':'🍫',
+                    'たこ焼き':'🐙','弁当・惣菜':'🍱','カフェ・洋食':'🍝'
+                }[r.genre] || '🍽️'}</div>
+                <div style="flex:1;">
+                    <div style="font-size:.85rem;font-weight:700;color:#F0E6FF;">${r.name}</div>
+                    <div style="font-size:.7rem;color:#9A8AB0;">${r.genre} | ${r.desc}</div>
+                </div>
+            </div>`).join('')}
+        </div>
+    `).join('');
+}
+
+function generateDivinationMessages(zodiac, blood, eto, rokuyo, kyusei, lp, dayKan, moonPhase, score, now) {
+    const zData = zodiacBase[zodiac];
+    const days = ['日','月','火','水','木','金','土'];
+    return [
+        {
+            name: `🌟 西洋占星術（${zodiac}・${zData.planet}支配）`,
+            text: `${zData.planet}の影響で${score >= 88 ? '強力な幸運のエネルギーが流れています。積極的な行動が吉。' : score >= 82 ? '安定した運気の中、直感を大切にすることで好機を掴めます。' : '慎重さの中にも前進する勇気を持って。チャンスは必ず来ます。'}ラッキーカラーは${zData.luckyColor}。`
+        },
+        {
+            name: `🔢 数秘術（ライフパス${lp}）`,
+            text: `あなたのライフパス数${lp}は${lp <= 3 ? '創造と表現' : lp <= 6 ? '愛と奉仕' : lp <= 9 ? '智慧と完成' : '直感とマスター'}の数。今日の数値${now.getDate()}との相性は${(now.getDate() + lp) % 2 === 0 ? '◎抜群' : '○良好'}です。`
+        },
+        {
+            name: `⭐ 九星気学（${kyusei}）`,
+            text: `${kyusei}の方は今日、${score >= 88 ? '運命的な出会いと好機が重なる強運の日。' : '着実な前進が吉。'}${days[now.getDay()]}曜日の${kyusei}は特に${now.getDay() === 3 || now.getDay() === 5 ? '対人運が高まります' : '活動運が良好です'}。`
+        },
+        {
+            name: `📅 六曜（${rokuyo}）`,
+            text: `本日は${rokuyo}。${{ '大安':'何事にも最良の日。新しいことを始めるのに最適です。', '友引':'友を引き寄せる吉日。人との縁が深まります。', '先勝':'午前中が特に吉。素早い行動が開運のカギ。', '先負':'午後から運気上昇。焦らず待つことが吉。', '赤口':'正午のみ吉。慎重に行動しましょう。', '仏滅':'変化と転換の日。新たな始まりへの準備期間。' }[rokuyo]}`
+        },
+        {
+            name: `🌙 月相（${moonPhase.phase}${moonPhase.emoji}）`,
+            text: `${moonPhase.phase}の今日は${{ '満月':'直感と感情が最高潮。恋愛運・対人運が特に強まります。', '新月':'新しい始まりに最適。願い事をするのに絶好の日。', '三日月':'物事がゆっくりと動き始めます。焦らず育てる意識で。', '上弦の月':'行動力が高まります。積極的に動くことで運が開けます。', '十三夜':'成果が見え始める時期。もうひと踏ん張りが大切。', '下弦の月':'手放しと整理の時。不要なものを断捨離すると運気UP。', '晦日月':'静かに内省する時期。次の新月に向けて準備を。' }[moonPhase.phase] || '静かなエネルギーの中で、自分を見つめ直す良い機会です。'}`
+        },
+        {
+            name: `🀄 四柱推命（日干：${dayKan}）`,
+            text: `今日の日干「${dayKan}」はあなたの干支「${document.getElementById('eto').value}」との相性が${{ '甲':'◎', '乙':'○', '丙':'◎', '丁':'○', '戊':'△', '己':'○', '庚':'◎', '辛':'○', '壬':'◎', '癸':'△' }[dayKan]}。${{ '甲':'力強い成長のエネルギー', '乙':'柔軟で適応力のある', '丙':'明るく情熱的な', '丁':'繊細で感受性豊かな', '戊':'安定と実直な', '己':'細やかで丁寧な', '庚':'鋭く行動力ある', '辛':'洗練された美しい', '壬':'大きな流れを持つ', '癸':'清らかで直感的な' }[dayKan]}エネルギーが今日を彩ります。`
+        },
+        {
+            name: `🩸 血液型占い（${blood}型）`,
+            text: `${{ 'A':'几帳面で誠実なA型', 'B':'自由で個性的なB型', 'O':'大らかでリーダーシップあるO型', 'AB':'二面性を持つ感受性豊かなAB型' }[blood]}の今日は${{ 'A':'丁寧な行動が評価される日。', 'B':'直感を信じて動くと吉。', 'O':'周囲との調和が運気を高める。', 'AB':'両面のバランスが取れた最良の日。' }[blood]}特に${score >= 88 ? '午後から夕方にかけて運気が最高潮に達します。' : '朝の行動が一日の運気を決めます。'}`
+        },
+    ];
+}
+
+function generateOverallMessage(zodiac, rokuyo, score, now, situation) {
+    const days = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
+    const msgs = [
+        `${days[now.getDay()]}の${zodiac}は運気${score}点。${rokuyo}と重なり、${score >= 88 ? '特別な出会いと幸運が訪れる最高の一日です。積極的な行動があなたの運命を変えます。' : score >= 82 ? '着実な前進と良縁に恵まれる日です。笑顔を忘れずに。' : '穏やかな運気の中に確かなチャンスが潜んでいます。'}`,
+        `${situation ? situation + 'にいる今、' : ''}宇宙のエネルギーがあなたに微笑んでいます。${score >= 88 ? '運命的な出会いの予感大。' : '良いことが起こる予感を大切に。'}今日のキーワードは「${score >= 88 ? '縁・出会い・奇跡' : score >= 82 ? '前進・成長・笑顔' : '準備・内省・感謝'}」です。`,
+    ];
+    return msgs[now.getDate() % msgs.length];
+}
+
+// ========== 占い実行 ==========
+function startFortune() {
+    const zodiac = document.getElementById('zodiac').value;
+    const blood = document.getElementById('blood-type').value;
+    const eto = document.getElementById('eto').value;
+    const birthdate = document.getElementById('birthdate').value || '1993-04-14';
+    const situation = document.getElementById('situation').value || currentLocation || '宮崎市';
+    const now = new Date();
+    document.getElementById('loading').classList.add('show');
+    document.getElementById('result').classList.remove('show');
+    setTimeout(() => {
+        const data = calculateFortune(zodiac, blood, eto, birthdate, situation, now);
+        displayResult(data, now, situation);
+        document.getElementById('loading').classList.remove('show');
+    }, 1800);
+}
+
+// ========== 結果表示 ==========
+function displayResult(data, now, location) {
+    const days = ['日','月','火','水','木','金','土'];
+    const m = now.getMonth()+1, d = now.getDate();
+    const h = String(now.getHours()).padStart(2,'0');
+    const min = String(now.getMinutes()).padStart(2,'0');
+    const dateStr = `${m}/${d}(${days[now.getDay()]}) ${h}:${min}`;
+    const resultDiv = document.getElementById('result');
+
+    let html = `
+    <div class="result-card card-overall">
+        <div class="card-header">
+            <div class="card-icon">🌟</div>
+            <div>
+                <div class="card-title">今日の総合メッセージ</div>
+                <div class="card-subtitle">${dateStr} | ${location} | ${data.rokuyo} ${data.moonPhase.emoji}</div>
+            </div>
+        </div>
+        <div class="overall-msg">${data.overall}</div>
+    </div>
+    <div class="result-card card-time">
+        <div class="card-header">
+            <div class="card-icon">⏰</div>
+            <div>
+                <div class="card-title">ラッキータイム</div>
+                <div class="card-subtitle">九星気学・数秘術・星座を統合して算出</div>
+            </div>
+        </div>
+        <div class="time-grid">
+            ${data.luckyTimes.map(t => `
+            <div class="time-item">
+                <div class="time-range">${t.time}</div>
+                <div class="time-score-val" style="color:${t.score>=90?'#FFD700':t.score>=85?'#C9A84C':'#9A8AB0'}">${t.score}点</div>
+                <div class="time-label">${t.label}</div>
+            </div>`).join('')}
+        </div>
+    </div>
+    <div class="result-card card-place">
+        <div class="card-header">
+            <div class="card-icon">📍</div>
+            <div>
+                <div class="card-title">ラッキースポット</div>
+                <div class="card-subtitle">風水・九星気学に基づく開運の場所</div>
+            </div>
+        </div>
+        ${data.places.map(p => `
+        <div class="place-item">
+            <div class="place-rank">🏆 第${p.rank}位 | ${p.category} | ${p.direction}の方角が吉</div>
+            <div class="place-name">${p.name}</div>
+            <div class="place-nearby">📍 近く：${p.nearby}</div>
+            <div class="place-reason">${p.reason}</div>
+        </div>`).join('')}
+    </div>
+    <div class="result-card card-food">
+        <div class="card-header">
+            <div class="card-icon">🍽️</div>
+            <div>
+                <div class="card-title">ラッキーフード</div>
+                <div class="card-subtitle">五行説・星座エレメントに基づく開運食</div>
+            </div>
+        </div>
+        ${data.foods.map(f => `
+        <div class="food-item">
+            <div class="food-rank">🍀 第${f.rank}位 | ${f.color}の食べ物 | ${f.best_time}</div>
+            <div class="food-name">${f.name}</div>
+            <div class="food-shop">🏪 ${f.shop}</div>
+            <div class="food-reason">${f.reason}</div>
+        </div>`).join('')}
+    </div>
+    <div class="result-card card-divination">
+        <div class="card-header">
+            <div class="card-icon">🔮</div>
+            <div>
+                <div class="card-title">占術別メッセージ</div>
+                <div class="card-subtitle">7種類の占術を統合</div>
+            </div>
+        </div>
+        ${data.divinations.map(d => `
+        <div class="div-item">
+            <div class="div-name">${d.name}</div>
+            <div class="div-text">${d.text}</div>
+        </div>`).join('')}
+    </div>`;
+
+    const region = detectRegion(location);
+    const rdb = regionalDB[region] || regionalDB['default'];
+    const isInMiyazaki = region === '宮崎';
+
+    if (isInMiyazaki) {
+        html += `
+        <div class="result-card" style="background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(10,6,20,.9));margin:15px 0;">
+            <div class="card-header">
+                <div class="card-icon">🏪</div>
+                <div>
+                    <div class="card-title">イオンモール宮崎 全飲食店一覧</div>
+                    <div class="card-subtitle">全${allAeonRestaurants.length}店舗 完全収録</div>
+                </div>
+            </div>
+            ${generateAllShopsHTML()}
+        </div>`;
+    } else if (region !== 'default') {
+        const allFoods = Object.values(rdb.foods || {}).flat();
+        html += `
+        <div class="result-card" style="background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(10,6,20,.9));margin:15px 0;">
+            <div class="card-header">
+                <div class="card-icon">🗾</div>
+                <div>
+                    <div class="card-title">${region}のグルメ情報</div>
+                    <div class="card-subtitle">全${allFoods.length}メニュー収録</div>
+                </div>
+            </div>
+            <div style="margin-bottom:12px;">
+                <div style="font-size:.7rem;color:var(--gold);letter-spacing:.1em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);">🍽️ ${region}のおすすめグルメ・お店</div>
+                ${allFoods.map(f => `
+                <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                    <div style="font-size:1rem;min-width:24px;">🍴</div>
+                    <div style="flex:1;">
+                        <div style="font-size:.85rem;font-weight:700;color:#F0E6FF;">${f.name}</div>
+                        <div style="font-size:.7rem;color:var(--gold);">📍 ${f.shop}</div>
+                    </div>
+                </div>`).join('')}
+            </div>
+            <div style="margin-top:15px;">
+                <div style="font-size:.7rem;color:var(--accent);letter-spacing:.1em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);">⛩️ ${region}のパワースポット・おでかけ情報</div>
+                ${['spiritual','nature','shopping','cafe'].map(cat => {
+                    const spots = rdb[cat] || [];
+                    const icon = {spiritual:'⛩️',nature:'🌿',shopping:'🛍️',cafe:'☕'}[cat];
+                    const label = {spiritual:'神社・パワースポット',nature:'自然・公園',shopping:'ショッピング',cafe:'カフェ'}[cat];
+                    return `
+                    <div style="margin-bottom:8px;">
+                        <div style="font-size:.7rem;color:var(--muted);margin-bottom:4px;">${icon} ${label}</div>
+                        ${spots.map(s => `<div style="font-size:.8rem;color:var(--text);padding:3px 8px;">・${s}</div>`).join('')}
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    resultDiv.innerHTML = html;
+    resultDiv.classList.add('show');
+    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// 初期設定
+document.getElementById('zodiac').value = '牡羊座';
+</script>
+</body>
+</html>
